@@ -1,25 +1,30 @@
 version: 2.1
 
 jobs:
-  build:
-    working_directory: ~/circleci-python
+  build_and_push:
     docker:
-      - image: "circleci/python:3.6.4"
+      - image: cimg/base:stable   # CircleCI base image with Docker installed
     steps:
-      - checkout
-      - run: python3 main.py
-  test:
-    working_directory: ~/circleci-python
-    docker:
-      - image: "circleci/python:3.6.4"
-    steps:
-      - checkout
-      - run: python3 main-test.py
+      - checkout  # pulls your code
+      
+      # Authenticate with Docker Hub using env variables
+      - setup_remote_docker
+      - run:
+          name: Login to Docker Hub
+          command: echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+      
+      # Build Docker image
+      - run:
+          name: Build Docker Image
+          command: docker build -t $DOCKERHUB_USER/newapplication:latest .
+      
+      # Push image to Docker Hub
+      - run:
+          name: Push to Docker Hub
+          command: docker push $DOCKERHUB_USER/newapplication:latest
 
 workflows:
-  build_and_test:
+  build_and_push_workflow:
     jobs:
-      - build
-      - test:
-          requires:
-            - build
+      - build_and_push
+
